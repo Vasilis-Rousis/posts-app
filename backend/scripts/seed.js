@@ -4,8 +4,36 @@ const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Starting database seeding...");
+  console.log("🔍 Checking database status...");
 
+  try {
+    // Check if any data exists in all tables
+    const userCount = await prisma.user.count();
+    const postCount = await prisma.post.count();
+    const likeCount = await prisma.like.count();
+
+    console.log(`📊 Current database status:`);
+    console.log(`   Users: ${userCount}`);
+    console.log(`   Posts: ${postCount}`);
+    console.log(`   Likes: ${likeCount}`);
+
+    // Only seed if ALL tables are empty
+    if (userCount === 0 && postCount === 0 && likeCount === 0) {
+      console.log("🌱 Database is empty, starting seeding process...");
+      await seedDatabase();
+    } else {
+      console.log("✅ Database already contains data, skipping seeding.");
+      console.log(
+        "💡 To force re-seed, delete all data first or use npm run db:reset"
+      );
+    }
+  } catch (error) {
+    console.error("❌ Error checking database status:", error);
+    throw error;
+  }
+}
+
+async function seedDatabase() {
   try {
     // Fetch users from JSONPlaceholder
     console.log("📥 Fetching users from JSONPlaceholder...");
@@ -20,12 +48,6 @@ async function main() {
       "https://jsonplaceholder.typicode.com/posts"
     );
     const posts = await postsResponse.json();
-
-    // Clear existing data
-    console.log("🧹 Clearing existing data...");
-    await prisma.like.deleteMany();
-    await prisma.post.deleteMany();
-    await prisma.user.deleteMany();
 
     // Insert users
     console.log("👥 Inserting users...");
@@ -86,10 +108,16 @@ async function main() {
       });
     }
 
+    // Fix sequences after seeding with explicit IDs
+    console.log("🔧 Fixing database sequences...");
+    await prisma.$executeRaw`SELECT setval('users_id_seq', (SELECT MAX(id) FROM users))`;
+    await prisma.$executeRaw`SELECT setval('posts_id_seq', (SELECT MAX(id) FROM posts))`;
+
     console.log("✅ Database seeding completed successfully!");
     console.log(
       `📊 Inserted: ${users.length} users, ${posts.length} posts, ${sampleLikes.length} likes`
     );
+    console.log("🔧 Database sequences have been fixed for new records");
   } catch (error) {
     console.error("❌ Error seeding database:", error);
     throw error;
