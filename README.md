@@ -96,7 +96,7 @@ A modern, containerized social media backend API with authentication, CRUD opera
    node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
    ```
 
-   Copy the output and replace `your_generated_jwt_secret_here` in the `.env` file.
+   Copy the output and replace `yourgeneratedjwtsecret` in the `.env` file.
 
 4. **Start the application**
 
