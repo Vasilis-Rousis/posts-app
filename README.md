@@ -99,17 +99,25 @@ Required environment variables (see `.env.example`):
 # Database
 POSTGRES_DB=posts_app
 POSTGRES_USER=admin
-POSTGRES_PASSWORD=your_password
-DATABASE_URL=postgresql://admin:password@postgres:5432/posts_app
+POSTGRES_PASSWORD=your_postgres_password
+DATABASE_URL=postgresql://admin:password123@postgres:5432/posts_app
 
-# Authentication
-JWT_SECRET=your_generated_jwt_secret
-
-# Services
-NODE_ENV=development
-PORT=3001
+# pgAdmin
 PGADMIN_DEFAULT_EMAIL=admin@admin.com
 PGADMIN_DEFAULT_PASSWORD=your_pgadmin_password
+
+# Backend
+JWT_SECRET=your_generated_jwt_secret
+NODE_ENV=development
+PORT=3001
+
+# Frontend
+FRONTEND_PORT=3000
+VITE_API_URL=http://localhost:3001/api
+
+# Docker
+POSTGRES_PORT=5432
+PGADMIN_PORT=8080
 ```
 
 ### What Happens Automatically
