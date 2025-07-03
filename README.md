@@ -57,7 +57,7 @@ A modern, containerized social media backend API with authentication, CRUD opera
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Vasilis-Rousis/posts-app.git
    cd posts-app
    ```
 
