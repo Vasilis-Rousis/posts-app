@@ -63,9 +63,32 @@ A modern, containerized social media backend API with authentication, CRUD opera
 
 2. **Set up environment variables**
 
-   ```bash
-   cp .env.example .env
-   ```
+Create a .env file at the *root* of the project with these values
+
+```env
+# Database
+POSTGRES_DB=posts_app
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=yourpostgrespassword
+DATABASE_URL=postgresql://admin:password123@postgres:5432/posts_app
+
+# pgAdmin
+PGADMIN_DEFAULT_EMAIL=admin@admin.com
+PGADMIN_DEFAULT_PASSWORD=yourpgadminpassword
+
+# Backend
+JWT_SECRET=yourgeneratedjwtsecret
+NODE_ENV=development
+PORT=3001
+
+# Frontend
+FRONTEND_PORT=3000
+VITE_API_URL=http://localhost:3001/api
+
+# Docker
+POSTGRES_PORT=5432
+PGADMIN_PORT=8080
+```
 
 3. **Generate a secure JWT secret**
 
@@ -90,35 +113,6 @@ A modern, containerized social media backend API with authentication, CRUD opera
    # Run comprehensive tests
    node test-api.js
    ```
-
-### 🌍 Environment Variables
-
-Required environment variables (see `.env.example`):
-
-```env
-# Database
-POSTGRES_DB=posts_app
-POSTGRES_USER=admin
-POSTGRES_PASSWORD=your_postgres_password
-DATABASE_URL=postgresql://admin:password123@postgres:5432/posts_app
-
-# pgAdmin
-PGADMIN_DEFAULT_EMAIL=admin@admin.com
-PGADMIN_DEFAULT_PASSWORD=your_pgadmin_password
-
-# Backend
-JWT_SECRET=your_generated_jwt_secret
-NODE_ENV=development
-PORT=3001
-
-# Frontend
-FRONTEND_PORT=3000
-VITE_API_URL=http://localhost:3001/api
-
-# Docker
-POSTGRES_PORT=5432
-PGADMIN_PORT=8080
-```
 
 ### What Happens Automatically
 
