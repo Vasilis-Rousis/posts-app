@@ -35,8 +35,32 @@ const authenticateToken = (req, res, next) => {
   );
 };
 
+// Optional Authentication Middleware (for public endpoints that can show user-specific data if logged in)
+const optionalAuth = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    req.user = null; // No user logged in
+    return next();
+  }
+
+  jwt.verify(
+    token,
+    process.env.JWT_SECRET || "fallback-secret",
+    (err, user) => {
+      if (err) {
+        req.user = null; // Invalid token, treat as no user
+      } else {
+        req.user = user; // Valid token, user is logged in
+      }
+      next();
+    }
+  );
+};
+
 // =============================================================================
-// HEALTH CHECK & TEST ROUTES (keeping your existing ones)
+// HEALTH CHECK & TEST ROUTES (PUBLIC)
 // =============================================================================
 
 app.get("/api/health", (req, res) => {
@@ -70,7 +94,7 @@ app.get("/api/test-db", async (req, res) => {
 });
 
 // =============================================================================
-// AUTHENTICATION ROUTES
+// AUTHENTICATION ROUTES (PUBLIC)
 // =============================================================================
 
 // Register
@@ -193,11 +217,11 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 // =============================================================================
-// POSTS ROUTES
+// POSTS ROUTES (PUBLIC VIEWING, PROTECTED ACTIONS)
 // =============================================================================
 
-// Get all posts with pagination and like information
-app.get("/api/posts", authenticateToken, async (req, res) => {
+// Get all posts with pagination - PUBLIC but shows user-specific data if logged in
+app.get("/api/posts", optionalAuth, async (req, res) => {
   try {
     const { page = 1, limit = 10, search = "" } = req.query;
     const skip = (page - 1) * limit;
@@ -228,7 +252,7 @@ app.get("/api/posts", authenticateToken, async (req, res) => {
           select: {
             userId: true,
           },
-        },
+        }, // Always include likes for social proof
         _count: {
           select: {
             likes: true,
@@ -240,7 +264,7 @@ app.get("/api/posts", authenticateToken, async (req, res) => {
       },
     });
 
-    // Add isLiked flag for current user and clean up response
+    // Add isLiked flag for current user (if logged in)
     const postsWithLikeStatus = posts.map((post) => ({
       id: post.id,
       title: post.title,
@@ -248,7 +272,10 @@ app.get("/api/posts", authenticateToken, async (req, res) => {
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
       user: post.user,
-      isLiked: post.likes.some((like) => like.userId === req.user.userId),
+      isLiked:
+        req.user && post.likes
+          ? post.likes.some((like) => like.userId === req.user.userId)
+          : false,
       likesCount: post._count.likes,
     }));
 
@@ -271,8 +298,8 @@ app.get("/api/posts", authenticateToken, async (req, res) => {
   }
 });
 
-// Get a single post by ID
-app.get("/api/posts/:id", authenticateToken, async (req, res) => {
+// Get a single post by ID - PUBLIC but shows user-specific data if logged in
+app.get("/api/posts/:id", optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -286,11 +313,13 @@ app.get("/api/posts/:id", authenticateToken, async (req, res) => {
             username: true,
           },
         },
-        likes: {
-          select: {
-            userId: true,
-          },
-        },
+        likes: req.user
+          ? {
+              select: {
+                userId: true,
+              },
+            }
+          : false, // Only include likes if user is authenticated
         _count: {
           select: {
             likes: true,
@@ -305,7 +334,10 @@ app.get("/api/posts/:id", authenticateToken, async (req, res) => {
 
     res.json({
       ...post,
-      isLiked: post.likes.some((like) => like.userId === req.user.userId),
+      isLiked:
+        req.user && post.likes
+          ? post.likes.some((like) => like.userId === req.user.userId)
+          : false,
       likesCount: post._count.likes,
     });
   } catch (error) {
@@ -314,7 +346,7 @@ app.get("/api/posts/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// Create a new post
+// Create a new post - PROTECTED
 app.post("/api/posts", authenticateToken, async (req, res) => {
   try {
     const { title, body } = req.body;
@@ -371,7 +403,7 @@ app.post("/api/posts", authenticateToken, async (req, res) => {
   }
 });
 
-// Update a post (only by the author)
+// Update a post (only by the author) - PROTECTED
 app.put("/api/posts/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -449,7 +481,7 @@ app.put("/api/posts/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// Delete a post (only by the author)
+// Delete a post (only by the author) - PROTECTED
 app.delete("/api/posts/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -482,10 +514,10 @@ app.delete("/api/posts/:id", authenticateToken, async (req, res) => {
 });
 
 // =============================================================================
-// LIKES ROUTES
+// LIKES ROUTES (PROTECTED)
 // =============================================================================
 
-// Like/Unlike a post (toggle)
+// Like/Unlike a post (toggle) - PROTECTED
 app.post("/api/posts/:postId/like", authenticateToken, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -536,7 +568,7 @@ app.post("/api/posts/:postId/like", authenticateToken, async (req, res) => {
   }
 });
 
-// Get user's liked posts
+// Get user's liked posts - PROTECTED
 app.get("/api/user/liked-posts", authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
@@ -598,7 +630,7 @@ app.get("/api/user/liked-posts", authenticateToken, async (req, res) => {
   }
 });
 
-// Remove all likes for current user
+// Remove all likes for current user - PROTECTED
 app.delete(
   "/api/user/liked-posts/clear",
   authenticateToken,
@@ -622,10 +654,10 @@ app.delete(
 );
 
 // =============================================================================
-// USER ROUTES
+// USER ROUTES (PROTECTED)
 // =============================================================================
 
-// Get current user profile
+// Get current user profile - PROTECTED
 app.get("/api/user/profile", authenticateToken, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -660,7 +692,7 @@ app.get("/api/user/profile", authenticateToken, async (req, res) => {
   }
 });
 
-// Get user's own posts
+// Get user's own posts - PROTECTED
 app.get("/api/user/posts", authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
@@ -747,17 +779,16 @@ app.listen(PORT, () => {
   console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🗄️  Database test: http://localhost:${PORT}/api/test-db`);
   console.log("📋 API Endpoints:");
-  console.log("   Authentication:");
+  console.log("   🌐 PUBLIC:");
+  console.log("   - GET /api/posts (view all posts)");
+  console.log("   - GET /api/posts/:id (view single post)");
   console.log("   - POST /api/auth/register");
   console.log("   - POST /api/auth/login");
-  console.log("   Posts:");
-  console.log("   - GET /api/posts");
-  console.log("   - POST /api/posts");
-  console.log("   - GET /api/posts/:id");
-  console.log("   - PUT /api/posts/:id");
-  console.log("   - DELETE /api/posts/:id");
-  console.log("   - POST /api/posts/:id/like");
-  console.log("   User:");
+  console.log("   🔒 PROTECTED:");
+  console.log("   - POST /api/posts (create post)");
+  console.log("   - PUT /api/posts/:id (update post)");
+  console.log("   - DELETE /api/posts/:id (delete post)");
+  console.log("   - POST /api/posts/:id/like (like/unlike)");
   console.log("   - GET /api/user/profile");
   console.log("   - GET /api/user/posts");
   console.log("   - GET /api/user/liked-posts");
