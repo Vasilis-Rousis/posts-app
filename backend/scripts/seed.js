@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🔍 Checking database status...");
+  console.log("Checking database status...");
 
   try {
     // Check if any data exists in all tables
@@ -12,23 +12,23 @@ async function main() {
     const postCount = await prisma.post.count();
     const likeCount = await prisma.like.count();
 
-    console.log(`📊 Current database status:`);
+    console.log(`   Current database status:`);
     console.log(`   Users: ${userCount}`);
     console.log(`   Posts: ${postCount}`);
     console.log(`   Likes: ${likeCount}`);
 
     // Only seed if ALL tables are empty
     if (userCount === 0 && postCount === 0 && likeCount === 0) {
-      console.log("🌱 Database is empty, starting seeding process...");
+      console.log("Database is empty, starting seeding process...");
       await seedDatabase();
     } else {
-      console.log("✅ Database already contains data, skipping seeding.");
+      console.log("Database already contains data, skipping seeding.");
       console.log(
-        "💡 To force re-seed, delete all data first or use npm run db:reset"
+        "To force re-seed, delete all data first or use npm run db:reset"
       );
     }
   } catch (error) {
-    console.error("❌ Error checking database status:", error);
+    console.error("Error checking database status:", error);
     throw error;
   }
 }
@@ -36,21 +36,21 @@ async function main() {
 async function seedDatabase() {
   try {
     // Fetch users from JSONPlaceholder
-    console.log("📥 Fetching users from JSONPlaceholder...");
+    console.log("Fetching users from JSONPlaceholder...");
     const usersResponse = await fetch(
       "https://jsonplaceholder.typicode.com/users"
     );
     const users = await usersResponse.json();
 
     // Fetch posts from JSONPlaceholder
-    console.log("📥 Fetching posts from JSONPlaceholder...");
+    console.log("Fetching posts from JSONPlaceholder...");
     const postsResponse = await fetch(
       "https://jsonplaceholder.typicode.com/posts"
     );
     const posts = await postsResponse.json();
 
     // Insert users
-    console.log("👥 Inserting users...");
+    console.log("Inserting users...");
     const defaultPassword = await bcrypt.hash("password123", 10);
 
     for (const user of users) {
@@ -77,7 +77,7 @@ async function seedDatabase() {
     }
 
     // Insert posts
-    console.log("📝 Inserting posts...");
+    console.log("Inserting posts...");
     for (const post of posts) {
       await prisma.post.create({
         data: {
@@ -90,7 +90,7 @@ async function seedDatabase() {
     }
 
     // Add some sample likes for demonstration
-    console.log("❤️ Adding sample likes...");
+    console.log("Adding sample likes...");
     const sampleLikes = [
       { userId: 1, postId: 1 },
       { userId: 1, postId: 5 },
@@ -109,17 +109,17 @@ async function seedDatabase() {
     }
 
     // Fix sequences after seeding with explicit IDs
-    console.log("🔧 Fixing database sequences...");
+    console.log("Fixing database sequences...");
     await prisma.$executeRaw`SELECT setval('users_id_seq', (SELECT MAX(id) FROM users))`;
     await prisma.$executeRaw`SELECT setval('posts_id_seq', (SELECT MAX(id) FROM posts))`;
 
-    console.log("✅ Database seeding completed successfully!");
+    console.log("Database seeding completed successfully!");
     console.log(
-      `📊 Inserted: ${users.length} users, ${posts.length} posts, ${sampleLikes.length} likes`
+      `Inserted: ${users.length} users, ${posts.length} posts, ${sampleLikes.length} likes`
     );
-    console.log("🔧 Database sequences have been fixed for new records");
+    console.log("Database sequences have been fixed for new records");
   } catch (error) {
-    console.error("❌ Error seeding database:", error);
+    console.error("Error seeding database:", error);
     throw error;
   }
 }
