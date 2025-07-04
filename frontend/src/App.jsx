@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
 // Layout Components
@@ -13,25 +13,60 @@ function App() {
   // State Management
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  // Fetch posts from API
-  const fetchPosts = async () => {
+  // Fetch posts from API with pagination
+  const fetchPosts = async (page = 1, shouldAppend = false) => {
     try {
-      setLoading(true);
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
 
-      const response = await axios.get("http://localhost:3001/api/posts");
+      const response = await axios.get("http://localhost:3001/api/posts", {
+        params: {
+          page: page,
+          limit: 10,
+        },
+      });
+
       console.log("API Response:", response.data);
 
-      setPosts(response.data.posts || []);
+      const newPosts = response.data.posts || [];
+      const pagination = response.data.pagination;
+
+      if (shouldAppend) {
+        // Append new posts to existing posts (infinite scroll)
+        setPosts((prevPosts) => [...prevPosts, ...newPosts]);
+      } else {
+        // Replace posts (initial load or refresh)
+        setPosts(newPosts);
+      }
+
+      // Update pagination state
+      setCurrentPage(pagination.currentPage);
+      setHasMore(pagination.hasNext);
     } catch (error) {
       console.error("Error fetching posts:", error);
       setError(error.message || "Failed to fetch posts");
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  // Load more posts (for infinite scroll)
+  const loadMorePosts = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+
+    console.log("Loading more posts, current page:", currentPage);
+    await fetchPosts(currentPage + 1, true);
+  }, [currentPage, loadingMore, hasMore]);
 
   // Handle new post creation
   const handlePostCreated = (newPost) => {
@@ -40,9 +75,11 @@ function App() {
     setPosts((prevPosts) => [newPost.post || newPost, ...prevPosts]);
   };
 
-  // Handle refresh
+  // Handle refresh - reset to first page
   const handleRefresh = () => {
-    fetchPosts();
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchPosts(1, false);
   };
 
   // Fetch posts on component mount
@@ -60,8 +97,11 @@ function App() {
             <PostsFeed
               posts={posts}
               loading={loading}
+              loadingMore={loadingMore}
               error={error}
+              hasMore={hasMore}
               onRefresh={handleRefresh}
+              onLoadMore={loadMorePosts}
             />
           </div>
         </div>

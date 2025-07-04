@@ -1,12 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Heart,
   MessageCircle,
-  Share,
-  Star,
-  Settings,
   Loader2,
   RefreshCw,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -20,8 +18,17 @@ import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Separator } from "../ui/separator";
 
-const PostsFeed = ({ posts, loading, error, onRefresh }) => {
+const PostsFeed = ({
+  posts,
+  loading,
+  loadingMore,
+  error,
+  hasMore,
+  onRefresh,
+  onLoadMore,
+}) => {
   const [likedPosts, setLikedPosts] = useState({});
+  const loadMoreRef = useRef(null);
 
   const toggleLike = (postId) => {
     setLikedPosts((prev) => ({
@@ -33,7 +40,39 @@ const PostsFeed = ({ posts, loading, error, onRefresh }) => {
     console.log(`Toggle like for post ${postId}`);
   };
 
-  // Loading state
+  // Intersection Observer for infinite scroll
+  const handleObserver = useCallback(
+    (entries) => {
+      const target = entries[0];
+      if (target.isIntersecting && hasMore && !loadingMore) {
+        console.log("Loading more posts...");
+        onLoadMore();
+      }
+    },
+    [hasMore, loadingMore, onLoadMore]
+  );
+
+  useEffect(() => {
+    const option = {
+      root: null,
+      rootMargin: "20px",
+      threshold: 0,
+    };
+
+    const observer = new IntersectionObserver(handleObserver, option);
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current);
+      }
+    };
+  }, [handleObserver]);
+
+  // Initial loading state
   if (loading) {
     return (
       <div className="space-y-6">
@@ -72,12 +111,8 @@ const PostsFeed = ({ posts, loading, error, onRefresh }) => {
             <h3 className="font-semibold text-red-900 mb-2">
               Error Loading Posts
             </h3>
-            <p className="text-red-700 text-sm mb-4">{error}</p>
-            <Button
-              variant="outline"
-              onClick={onRefresh}
-              className="border-red-300 text-red-700 hover:bg-red-100"
-            >
+            <p className="text-red-700 mb-4">{error}</p>
+            <Button onClick={onRefresh} className="bg-red-600 hover:bg-red-700">
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
             </Button>
@@ -89,36 +124,34 @@ const PostsFeed = ({ posts, loading, error, onRefresh }) => {
 
   return (
     <div className="space-y-6">
-      {/* Feed Header */}
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-gray-900">Posts Feed</h2>
-
-        </div>
+        <h2 className="text-2xl font-bold text-gray-900">Posts Feed</h2>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={onRefresh}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            className="text-gray-600 hover:text-gray-800"
+          >
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
-          </Button>
-          <Button variant="outline" size="sm">
-            <Settings className="w-4 h-4 mr-2" />
-            Filter
           </Button>
         </div>
       </div>
 
-      {/* Posts List */}
+      {/* Posts */}
       {posts.length === 0 ? (
         <Card>
           <CardContent className="pt-6 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
               <MessageCircle className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">No posts yet</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">No Posts Yet</h3>
             <p className="text-gray-600 mb-4">
-              Be the first to share something with the community!
+              Be the first to create a post! Share your thoughts with the
+              community.
             </p>
-            <Badge variant="secondary">Database connected ✅</Badge>
           </CardContent>
         </Card>
       ) : (
@@ -126,62 +159,44 @@ const PostsFeed = ({ posts, loading, error, onRefresh }) => {
           {posts.map((post) => (
             <Card
               key={post.id}
-              className="hover:shadow-md transition-all duration-200 hover:border-gray-300"
+              className="shadow-sm hover:shadow-md transition-shadow"
             >
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Avatar className="h-12 w-12 border-2 border-gray-100">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-10 w-10">
                       <AvatarImage
-                        src={post.user?.avatar}
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          post.user?.name || "User"
+                        )}&background=6366f1&color=fff`}
                         alt={post.user?.name || "User"}
                       />
-                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold">
-                        {post.user?.name
-                          ? post.user.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .toUpperCase()
-                          : "U"}
+                      <AvatarFallback className="bg-blue-500 text-white">
+                        {(post.user?.name || "U").charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="flex items-center space-x-2">
-                        <CardTitle className="text-base text-gray-900">
-                          {post.user?.name || "Unknown User"}
-                        </CardTitle>
-                        {(post.likesCount || 0) > 5 && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs border-orange-300 text-orange-600"
-                          >
-                            <Star className="w-3 h-3 mr-1" />
-                            Popular
-                          </Badge>
-                        )}
-                      </div>
-                      <CardDescription className="text-sm">
+                      <h3 className="font-semibold text-gray-900">
+                        {post.user?.name || "Anonymous"}
+                      </h3>
+                      <p className="text-sm text-gray-500">
                         @{post.user?.username || "user"} •{" "}
-                        {new Date(post.createdAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </CardDescription>
+                        {new Date(post.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                 </div>
               </CardHeader>
 
-              <CardContent>
+              <CardContent className="pt-0">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-2 text-lg leading-tight">
+                    <CardTitle className="text-lg font-semibold text-gray-900 mb-2">
                       {post.title}
-                    </h3>
-                    <p className="text-gray-700 leading-relaxed">{post.body}</p>
+                    </CardTitle>
+                    <CardDescription className="text-gray-700 leading-relaxed">
+                      {post.body}
+                    </CardDescription>
                   </div>
 
                   <Separator />
@@ -212,6 +227,34 @@ const PostsFeed = ({ posts, loading, error, onRefresh }) => {
               </CardContent>
             </Card>
           ))}
+
+          {/* Loading more indicator */}
+          {loadingMore && (
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
+                <p className="text-gray-600">Loading more posts...</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* End of posts indicator */}
+          {!hasMore && posts.length > 0 && (
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="pt-6 text-center">
+                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-600" />
+                <p className="text-green-800 font-medium">
+                  You're all caught up!
+                </p>
+                <p className="text-green-700 text-sm">
+                  You've seen all available posts.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Invisible element to trigger loading more */}
+          {hasMore && !loadingMore && <div ref={loadMoreRef} className="h-1" />}
         </div>
       )}
     </div>
