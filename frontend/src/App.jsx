@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 
 // Layout Components
@@ -18,6 +18,15 @@ function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
+  const stateRef = useRef();
+  stateRef.current = {
+    currentPage,
+    loadingMore,
+    hasMore,
+    postsLength: posts.length,
+  };
+
+
   // Fetch posts from API with pagination
   const fetchPosts = async (page = 1, shouldAppend = false) => {
     try {
@@ -35,24 +44,22 @@ function App() {
         },
       });
 
-      console.log("API Response:", response.data);
-
       const newPosts = response.data.posts || [];
       const pagination = response.data.pagination;
 
       if (shouldAppend) {
         // Append new posts to existing posts (infinite scroll)
-        setPosts((prevPosts) => [...prevPosts, ...newPosts]);
+        setPosts((prevPosts) => {
+          return [...prevPosts, ...newPosts];
+        });
       } else {
         // Replace posts (initial load or refresh)
         setPosts(newPosts);
       }
 
-      // Update pagination state
       setCurrentPage(pagination.currentPage);
       setHasMore(pagination.hasNext);
     } catch (error) {
-      console.error("Error fetching posts:", error);
       setError(error.message || "Failed to fetch posts");
     } finally {
       setLoading(false);
@@ -60,17 +67,23 @@ function App() {
     }
   };
 
-  // Load more posts (for infinite scroll)
-  const loadMorePosts = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
+  const loadMoreRef = useRef();
+  loadMoreRef.current = async () => {
+    const currentState = stateRef.current;
 
-    console.log("Loading more posts, current page:", currentPage);
-    await fetchPosts(currentPage + 1, true);
-  }, [currentPage, loadingMore, hasMore]);
+    if (currentState.loadingMore || !currentState.hasMore) {
+      return;
+    }
+
+    await fetchPosts(currentState.currentPage + 1, true);
+  };
+
+  const loadMorePosts = useCallback(() => {
+    return loadMoreRef.current();
+  }, []);
 
   // Handle new post creation
   const handlePostCreated = (newPost) => {
-    console.log("New post created:", newPost);
     // Add the new post to the beginning of the posts array
     setPosts((prevPosts) => [newPost.post || newPost, ...prevPosts]);
   };

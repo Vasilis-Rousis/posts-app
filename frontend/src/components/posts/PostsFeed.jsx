@@ -29,15 +29,18 @@ const PostsFeed = ({
 }) => {
   const [likedPosts, setLikedPosts] = useState({});
   const loadMoreRef = useRef(null);
+  const observerRef = useRef(null);
+  const onLoadMoreRef = useRef(onLoadMore);
+
+  useEffect(() => {
+    onLoadMoreRef.current = onLoadMore;
+  }, [onLoadMore]);
 
   const toggleLike = (postId) => {
     setLikedPosts((prev) => ({
       ...prev,
       [postId]: !prev[postId],
     }));
-
-    // TODO: Make API call to update like in database
-    console.log(`Toggle like for post ${postId}`);
   };
 
   // Intersection Observer for infinite scroll
@@ -45,32 +48,46 @@ const PostsFeed = ({
     (entries) => {
       const target = entries[0];
       if (target.isIntersecting && hasMore && !loadingMore) {
-        console.log("Loading more posts...");
-        onLoadMore();
+        onLoadMoreRef.current();
       }
     },
-    [hasMore, loadingMore, onLoadMore]
+    [hasMore, loadingMore]
   );
 
   useEffect(() => {
-    const option = {
+
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    const options = {
       root: null,
       rootMargin: "20px",
       threshold: 0,
     };
 
-    const observer = new IntersectionObserver(handleObserver, option);
+    // Create new observer
+    observerRef.current = new IntersectionObserver(handleObserver, options);
 
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
+    // Observe the load more element if it exists
+    if (loadMoreRef.current && hasMore && !loadingMore) {
+      observerRef.current.observe(loadMoreRef.current);
     }
 
     return () => {
-      if (loadMoreRef.current) {
-        observer.unobserve(loadMoreRef.current);
+      if (observerRef.current) {
+        observerRef.current.disconnect();
       }
     };
-  }, [handleObserver]);
+  }, [handleObserver, hasMore, loadingMore]);
+
+  // Separate effect to handle element reference changes
+  useEffect(() => {
+    if (observerRef.current && loadMoreRef.current && hasMore && !loadingMore) {
+      observerRef.current.disconnect();
+      observerRef.current.observe(loadMoreRef.current);
+    }
+  }, [posts.length, hasMore, loadingMore]);
 
   // Initial loading state
   if (loading) {
