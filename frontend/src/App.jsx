@@ -1,110 +1,277 @@
-import React from "react";
-import { CheckCircle, Server, Database, Palette } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  CheckCircle,
+  Server,
+  Database,
+  Palette,
+  Heart,
+  MessageCircle,
+  Share,
+  User,
+  Settings,
+  Plus,
+  Search,
+  Home,
+  Star,
+  MessageSquare,
+  Loader2,
+} from "lucide-react";
+import { Button } from "./components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./components/ui/card";
+import { Badge } from "./components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "./components/ui/avatar";
+import { Separator } from "./components/ui/separator";
 
 function App() {
+  const [likedPosts, setLikedPosts] = useState({});
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const toggleLike = (postId) => {
+    setLikedPosts((prev) => ({
+      ...prev,
+      [postId]: !prev[postId],
+    }));
+  };
+  
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Make API call
+        const response = await axios.get("http://localhost:3001/api/posts");
+
+        console.log("API Response:", response.data);
+
+        // Set posts state
+        setPosts(response.data.posts || []);
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  useEffect(() => {
+    console.log("Posts state updated:", posts);
+  }, [posts]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <Card className="w-96 text-center">
+          <CardContent className="pt-6">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading posts from API...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <Card className="w-96 text-center border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="w-8 h-8 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <span className="text-white text-sm">!</span>
+            </div>
+            <h3 className="font-semibold text-red-900 mb-2">
+              Error Loading Posts
+            </h3>
+            <p className="text-red-700 text-sm mb-4">{error}</p>
+            <Button
+              variant="outline"
+              onClick={() => window.location.reload()}
+              className="border-red-300 text-red-700 hover:bg-red-100"
+            >
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Header */}
-          <div className="mb-12">
-            <h1 className="text-5xl font-bold text-gradient mb-4">
-              Posts App Frontend
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              React + Vite + Tailwind CSS frontend successfully configured and
-              running with Docker
-            </p>
-          </div>
-
-          {/* Status Cards */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            <div className="card-hover text-center">
-              <div className="flex justify-center mb-4">
-                <CheckCircle className="w-12 h-12 text-green-500" />
+      {/* Navigation Bar */}
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-gray-900">
+                  PostsApp
+                </span>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                React
-              </h3>
-              <p className="text-gray-600">Ready & Configured</p>
             </div>
 
-            <div className="card-hover text-center">
-              <div className="flex justify-center mb-4">
-                <Server className="w-12 h-12 text-blue-500" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Vite</h3>
-              <p className="text-gray-600">Fast Development</p>
-            </div>
-
-            <div className="card-hover text-center">
-              <div className="flex justify-center mb-4">
-                <Palette className="w-12 h-12 text-purple-500" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Tailwind
-              </h3>
-              <p className="text-gray-600">Styled & Beautiful</p>
-            </div>
-
-            <div className="card-hover text-center">
-              <div className="flex justify-center mb-4">
-                <Database className="w-12 h-12 text-orange-500" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Docker
-              </h3>
-              <p className="text-gray-600">Containerized</p>
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="sm">
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </Button>
+              <Button variant="ghost" size="sm">
+                <Search className="w-4 h-4 mr-2" />
+                Search
+              </Button>
+              <Button variant="ghost" size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Create
+              </Button>
+              <Button variant="ghost" size="sm">
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </Button>
             </div>
           </div>
+        </div>
+      </nav>
 
-          {/* Next Steps */}
-          <div className="card max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              🎉 Frontend Setup Complete!
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Your React frontend is now running with Vite and Tailwind CSS in
-              Docker. Ready to start building the social media features!
-            </p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
 
-            <div className="space-y-2 text-left">
-              <div className="flex items-center text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                React 18 with modern hooks
+          {/* Create Post Card */}
+          <Card className="mb-8">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+
+                </div>
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                Vite for lightning-fast development
-              </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                Tailwind CSS with custom design system
-              </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                Docker containerization
-              </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                Hot module replacement
+              </CardHeader>
+          </Card>
+
+          {/* Posts Feed */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Latest posts
+              </h2>
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline">{posts.length} posts</Badge>
+                <Button variant="outline" size="sm">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Filter
+                </Button>
               </div>
             </div>
-          </div>
 
-          {/* Environment Info */}
-          <div className="mt-8 text-sm text-gray-500">
-            <p>
-              Frontend: <span className="font-mono">http://localhost:3000</span>
-            </p>
-            <p>
-              Backend API:{" "}
-              <span className="font-mono">http://localhost:3001/api</span>
-            </p>
-            <p>
-              Database:{" "}
-              <span className="font-mono">PostgreSQL on port 5432</span>
-            </p>
+            {posts.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-gray-600">
+                    No posts found. Make sure your backend is running!
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {posts.map((post) => (
+                  <Card
+                    key={post.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <Avatar className="h-12 w-12">
+                            <AvatarFallback>
+                              {post.user?.name
+                                ? post.user.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .toUpperCase()
+                                : "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <CardTitle className="text-base">
+                                {post.user?.name || "Unknown User"}
+                              </CardTitle>
+                              {post.likesCount > 5 && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Star className="w-3 h-3 mr-1" />
+                                  Popular
+                                </Badge>
+                              )}
+                            </div>
+                            <CardDescription>
+                              @{post.user?.username || "user"} •{" "}
+                              {new Date(post.createdAt).toLocaleDateString()}
+                            </CardDescription>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <h3 className="font-semibold text-gray-900 mb-2">
+                        {post.title}
+                      </h3>
+                      <p className="text-gray-700 mb-4 leading-relaxed">
+                        {post.body}
+                      </p>
+
+                      <Separator className="my-4" />
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleLike(post.id)}
+                            className={
+                              likedPosts[post.id] ? "text-red-500" : ""
+                            }
+                          >
+                            <Heart
+                              className={`w-4 h-4 mr-2 ${
+                                likedPosts[post.id] ? "fill-current" : ""
+                              }`}
+                            />
+                            {(post.likesCount || 0) +
+                              (likedPosts[post.id] ? 1 : 0)}
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Comments
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Share className="w-4 h-4 mr-2" />
+                            Share
+                          </Button>
+                        </div>
+                        <Badge variant="secondary">ID: {post.id}</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
