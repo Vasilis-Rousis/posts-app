@@ -1,3 +1,4 @@
+// contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 
@@ -15,6 +16,16 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [onLogoutCallbacks, setOnLogoutCallbacks] = useState([]);
+
+  const registerLogoutCallback = (callback) => {
+    setOnLogoutCallbacks((prev) => [...prev, callback]);
+  };
+
+  const unregisterLogoutCallback = (callback) => {
+    setOnLogoutCallbacks((prev) => prev.filter((cb) => cb !== callback));
+  };
 
   // Initialize auth state from localStorage on app start
   useEffect(() => {
@@ -116,6 +127,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Call all registered logout callbacks
+    onLogoutCallbacks.forEach((callback) => {
+      try {
+        callback();
+      } catch (error) {
+        console.error("Error in logout callback:", error);
+      }
+    });
+
     // Clear state
     setUser(null);
     setToken(null);
@@ -136,6 +156,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     isAuthenticated: !!user,
+    registerLogoutCallback,
+    unregisterLogoutCallback,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
