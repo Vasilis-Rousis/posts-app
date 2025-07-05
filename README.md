@@ -69,12 +69,12 @@ A modern, containerized social media backend API with authentication, CRUD opera
    # Database
    POSTGRES_DB=posts_app
    POSTGRES_USER=admin
-   POSTGRES_PASSWORD=yourpostgrespassword
+   POSTGRES_PASSWORD=password123
    DATABASE_URL=postgresql://admin:password123@postgres:5432/posts_app
    
    # pgAdmin
    PGADMIN_DEFAULT_EMAIL=admin@admin.com
-   PGADMIN_DEFAULT_PASSWORD=yourpgadminpassword
+   PGADMIN_DEFAULT_PASSWORD=admin123
    
    # Backend
    JWT_SECRET=yourgeneratedjwtsecret
