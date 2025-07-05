@@ -1,5 +1,11 @@
 // contexts/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
 import axios from "axios";
 
 const AuthContext = createContext({});
@@ -17,14 +23,17 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [onLogoutCallbacks, setOnLogoutCallbacks] = useState([]);
+  // Use useRef to avoid re-renders and dependency issues
+  const onLogoutCallbacksRef = useRef([]);
 
   const registerLogoutCallback = (callback) => {
-    setOnLogoutCallbacks((prev) => [...prev, callback]);
+    onLogoutCallbacksRef.current = [...onLogoutCallbacksRef.current, callback];
   };
 
   const unregisterLogoutCallback = (callback) => {
-    setOnLogoutCallbacks((prev) => prev.filter((cb) => cb !== callback));
+    onLogoutCallbacksRef.current = onLogoutCallbacksRef.current.filter(
+      (cb) => cb !== callback
+    );
   };
 
   // Initialize auth state from localStorage on app start
@@ -53,7 +62,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, []);
+  }, []); // Empty dependency array
 
   const login = async (email, password) => {
     try {
@@ -127,8 +136,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Call all registered logout callbacks
-    onLogoutCallbacks.forEach((callback) => {
+    // Execute all logout callbacks
+    onLogoutCallbacksRef.current.forEach((callback) => {
       try {
         callback();
       } catch (error) {
@@ -152,10 +161,10 @@ export const AuthProvider = ({ children }) => {
     user,
     token,
     loading,
+    isAuthenticated: !!user && !!token,
     login,
     register,
     logout,
-    isAuthenticated: !!user,
     registerLogoutCallback,
     unregisterLogoutCallback,
   };
