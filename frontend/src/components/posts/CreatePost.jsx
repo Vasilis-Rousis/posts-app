@@ -108,10 +108,14 @@ const CreatePost = ({ onPostCreated }) => {
       <Card className="mb-8 shadow-sm border-gray-200">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <span>Create New Post</span>
+            <span>
+              {isAuthenticated && user
+                ? `Welcome back, ${user?.name}!`
+                : "Sign in to create a post"}
+            </span>
           </CardTitle>
           <CardDescription>
-            Welcome back, {user?.name}! Share your thoughts with the community.
+            Share your thoughts with the community.
           </CardDescription>
         </CardHeader>
 

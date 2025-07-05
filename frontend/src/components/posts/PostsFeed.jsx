@@ -55,7 +55,6 @@ const PostsFeed = ({
   );
 
   useEffect(() => {
-
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
@@ -208,10 +207,10 @@ const PostsFeed = ({
               <CardContent className="pt-0">
                 <div className="space-y-4">
                   <div>
-                    <CardTitle className="text-lg font-semibold text-gray-900 mb-2">
+                    <CardTitle className="text-lg font-semibold text-gray-900 mb-2 break-words whitespace-normal">
                       {post.title}
                     </CardTitle>
-                    <CardDescription className="text-gray-700 leading-relaxed">
+                    <CardDescription className="text-gray-700 leading-relaxed break-words whitespace-normal">
                       {post.body}
                     </CardDescription>
                   </div>
@@ -237,7 +236,6 @@ const PostsFeed = ({
                         />
                         {(post.likesCount || 0) + (likedPosts[post.id] ? 1 : 0)}
                       </Button>
-
                     </div>
                   </div>
                 </div>

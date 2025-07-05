@@ -775,16 +775,16 @@ app.use((err, req, res, next) => {
 // =============================================================================
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🗄️  Database test: http://localhost:${PORT}/api/test-db`);
-  console.log("📋 API Endpoints:");
-  console.log("   🌐 PUBLIC:");
+  console.log(` Server running on port ${PORT}`);
+  console.log(` Health check: http://localhost:${PORT}/api/health`);
+  console.log(` Database test: http://localhost:${PORT}/api/test-db`);
+  console.log(" API Endpoints:");
+  console.log(" PUBLIC:");
   console.log("   - GET /api/posts (view all posts)");
   console.log("   - GET /api/posts/:id (view single post)");
   console.log("   - POST /api/auth/register");
   console.log("   - POST /api/auth/login");
-  console.log("   🔒 PROTECTED:");
+  console.log(" PROTECTED:");
   console.log("   - POST /api/posts (create post)");
   console.log("   - PUT /api/posts/:id (update post)");
   console.log("   - DELETE /api/posts/:id (delete post)");
@@ -797,7 +797,7 @@ app.listen(PORT, () => {
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
-  console.log("🛑 Shutting down gracefully...");
+  console.log("Shutting down gracefully...");
   await prisma.$disconnect();
   process.exit(0);
 });

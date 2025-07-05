@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import AuthDialog from "../auth/AuthDialog";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -73,11 +74,19 @@ const Navbar = () => {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="flex items-center space-x-2"
+                      className="flex items-center"
                     >
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
-                      </div>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage
+                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            user?.name || "User"
+                          )}&background=6366f1&color=fff`}
+                          alt={user?.name || "User"}
+                        />
+                        <AvatarFallback className="bg-blue-500 text-white">
+                          {(user?.name || "U").charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <span className="hidden sm:block">{user?.name}</span>
                     </Button>
                   </DropdownMenuTrigger>
