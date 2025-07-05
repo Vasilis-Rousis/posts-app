@@ -5,6 +5,8 @@ import {
   Loader2,
   RefreshCw,
   CheckCircle,
+  Grid3X3,
+  HeartHandshake,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -27,10 +29,13 @@ const PostsFeed = ({
   loadingMore,
   error,
   hasMore,
+  viewMode = "all",
+  isAuthenticated,
   onRefresh,
   onLoadMore,
+  onViewModeToggle,
 }) => {
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const { isPostLiked, toggleLike, loading: likesLoading } = useLikes();
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [likeLoadingStates, setLikeLoadingStates] = useState({});
@@ -64,11 +69,19 @@ const PostsFeed = ({
 
       // Call the API
       await toggleLike(postId);
+
+      // If we're viewing liked posts and the user just unliked, remove the post from view
+      if (viewMode === "liked" && wasLiked) {
+        // Optional: You could trigger a refresh here or handle this optimistically
+        // For now, let's just refresh the feed to update the view
+        setTimeout(() => {
+          onRefresh();
+        }, 500);
+      }
     } catch (error) {
       console.error("Error toggling like:", error);
 
       setOptimisticLikes((prev) => ({ ...prev, [postId]: currentLikesCount }));
-
     } finally {
       // Clear loading state
       setLikeLoadingStates((prev) => ({ ...prev, [postId]: false }));
@@ -81,6 +94,12 @@ const PostsFeed = ({
       return optimisticLikes[post.id];
     }
     return post.likesCount || 0;
+  };
+
+  // Handle view mode toggle
+  const handleToggleViewMode = () => {
+    const newMode = viewMode === "all" ? "liked" : "all";
+    onViewModeToggle(newMode);
   };
 
   // Intersection Observer for infinite scroll
@@ -128,12 +147,38 @@ const PostsFeed = ({
     }
   }, [posts.length, hasMore, loadingMore]);
 
+  // Get header text based on view mode
+  const getHeaderText = () => {
+    if (viewMode === "liked") {
+      return "Your Liked Posts";
+    }
+    return "Posts Feed";
+  };
+
+  // Get empty state message based on view mode
+  const getEmptyStateMessage = () => {
+    if (viewMode === "liked") {
+      return {
+        title: "No Liked Posts Yet",
+        message:
+          "Posts you like will appear here. Start exploring and like some posts!",
+      };
+    }
+    return {
+      title: "No Posts Yet",
+      message:
+        "Be the first to create a post! Share your thoughts with the community.",
+    };
+  };
+
   // Initial loading state
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Posts Feed</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {getHeaderText()}
+          </h2>
           <div className="flex items-center space-x-2">
             <Badge variant="outline" className="animate-pulse">
               Loading...
@@ -156,7 +201,9 @@ const PostsFeed = ({
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Posts Feed</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {getHeaderText()}
+          </h2>
         </div>
 
         <Card className="border-red-200 bg-red-50">
@@ -178,13 +225,44 @@ const PostsFeed = ({
     );
   }
 
+  const emptyState = getEmptyStateMessage();
+
   return (
     <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Posts Feed</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {getHeaderText()}
+          </h2>
           <div className="flex items-center space-x-2">
+            {/* View Toggle Button - Only show when authenticated */}
+            {isAuthenticated && (
+              <Button
+                variant={viewMode === "all" ? "outline" : "default"}
+                size="sm"
+                onClick={handleToggleViewMode}
+                className={`transition-colors ${
+                  viewMode === "liked"
+                    ? "bg-red-500 hover:bg-red-600 text-white"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+              >
+                {viewMode === "all" ? (
+                  <>
+                    <HeartHandshake className="w-4 h-4 mr-2" />
+                    Show Liked
+                  </>
+                ) : (
+                  <>
+                    <Grid3X3 className="w-4 h-4 mr-2" />
+                    Show All
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* Refresh Button */}
             <Button
               variant="outline"
               size="sm"
@@ -202,13 +280,16 @@ const PostsFeed = ({
           <Card>
             <CardContent className="pt-6 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <MessageCircle className="w-8 h-8 text-gray-400" />
+                {viewMode === "liked" ? (
+                  <HeartHandshake className="w-8 h-8 text-gray-400" />
+                ) : (
+                  <MessageCircle className="w-8 h-8 text-gray-400" />
+                )}
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">No Posts Yet</h3>
-              <p className="text-gray-600 mb-4">
-                Be the first to create a post! Share your thoughts with the
-                community.
-              </p>
+              <h3 className="font-semibold text-gray-900 mb-2">
+                {emptyState.title}
+              </h3>
+              <p className="text-gray-600 mb-4">{emptyState.message}</p>
             </CardContent>
           </Card>
         ) : (
@@ -313,10 +394,14 @@ const PostsFeed = ({
                 <CardContent className="pt-6 text-center">
                   <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-600" />
                   <p className="text-green-800 font-medium">
-                    You're all caught up!
+                    {viewMode === "liked"
+                      ? "You've seen all your liked posts!"
+                      : "You're all caught up!"}
                   </p>
                   <p className="text-green-700 text-sm">
-                    You've seen all available posts.
+                    {viewMode === "liked"
+                      ? "Like more posts to see them here."
+                      : "You've seen all available posts."}
                   </p>
                 </CardContent>
               </Card>

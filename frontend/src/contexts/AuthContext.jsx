@@ -155,6 +155,9 @@ export const AuthProvider = ({ children }) => {
 
     // Remove axios default header
     delete axios.defaults.headers.common["Authorization"];
+
+    // Refresh the page to ensure clean state
+    window.location.reload();
   };
 
   const value = {
