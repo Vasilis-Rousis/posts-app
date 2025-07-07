@@ -39,7 +39,6 @@ const PostsFeed = ({
   const { isPostLiked, toggleLike, loading: likesLoading } = useLikes();
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [likeLoadingStates, setLikeLoadingStates] = useState({});
-  const [optimisticLikes, setOptimisticLikes] = useState({});
 
   const loadMoreRef = useRef(null);
   const observerRef = useRef(null);
@@ -50,53 +49,53 @@ const PostsFeed = ({
   }, [onLoadMore]);
 
   // Handle like button click
-  const handleLikeClick = async (postId, currentLikesCount) => {
-    if (!isAuthenticated) {
-      setIsAuthDialogOpen(true);
-      return;
-    }
+  const handleLikeClick = useCallback(
+    async (postId) => {
+      if (!isAuthenticated) {
+        setIsAuthDialogOpen(true);
+        return;
+      }
 
-    try {
-      // Set loading state for this specific post
-      setLikeLoadingStates((prev) => ({ ...prev, [postId]: true }));
+      try {
+        // Set loading state for this specific post
+        setLikeLoadingStates((prev) => ({ ...prev, [postId]: true }));
 
-      // Get current like status
-      const wasLiked = isPostLiked(postId);
+        // Get current like status for potential view mode handling
+        const wasLiked = isPostLiked(postId);
 
-      // Optimistic update for like count
-      const newCount = wasLiked ? currentLikesCount - 1 : currentLikesCount + 1;
-      setOptimisticLikes((prev) => ({ ...prev, [postId]: newCount }));
+        // Call the API
+        await toggleLike(postId);
 
-      // Call the API
-      await toggleLike(postId);
-
-      // If we're viewing liked posts and the user just unliked, remove the post from view
-      if (viewMode === "liked" && wasLiked) {
-        // Optional: You could trigger a refresh here or handle this optimistically
-        // For now, let's just refresh the feed to update the view
+        // Refresh posts to get updated counts from backend
         setTimeout(() => {
           onRefresh();
-        }, 500);
+        }, 100);
+
+        // If we're viewing liked posts and the user just unliked, the refresh will handle removing it
+        if (viewMode === "liked" && wasLiked) {
+          // The refresh above will handle this automatically
+        }
+      } catch (error) {
+        console.error("Error toggling like:", error);
+      } finally {
+        // Clear loading state
+        setLikeLoadingStates((prev) => ({ ...prev, [postId]: false }));
       }
-    } catch (error) {
-      console.error("Error toggling like:", error);
+    },
+    [
+      isAuthenticated,
+      setIsAuthDialogOpen,
+      isPostLiked,
+      toggleLike,
+      onRefresh,
+      viewMode,
+    ]
+  );
 
-      setOptimisticLikes((prev) => ({ ...prev, [postId]: currentLikesCount }));
-    } finally {
-      // Clear loading state
-      setLikeLoadingStates((prev) => ({ ...prev, [postId]: false }));
-    }
-  };
-
-  // Get the display like count (optimistic or original)
   const getDisplayLikeCount = (post) => {
-    if (optimisticLikes[post.id] !== undefined) {
-      return optimisticLikes[post.id];
-    }
     return post.likesCount || 0;
   };
 
-  // Handle view mode toggle
   const handleToggleViewMode = () => {
     const newMode = viewMode === "all" ? "liked" : "all";
     onViewModeToggle(newMode);
@@ -124,7 +123,6 @@ const PostsFeed = ({
       threshold: 0,
     };
 
-    // Create new observer
     observerRef.current = new IntersectionObserver(handleObserver, options);
 
     // Observe the load more element if it exists
@@ -147,7 +145,6 @@ const PostsFeed = ({
     }
   }, [posts.length, hasMore, loadingMore]);
 
-  // Get header text based on view mode
   const getHeaderText = () => {
     if (viewMode === "liked") {
       return "Your Liked Posts";
@@ -155,7 +152,6 @@ const PostsFeed = ({
     return "Posts Feed";
   };
 
-  // Get empty state message based on view mode
   const getEmptyStateMessage = () => {
     if (viewMode === "liked") {
       return {
@@ -349,9 +345,7 @@ const PostsFeed = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() =>
-                              handleLikeClick(post.id, post.likesCount || 0)
-                            }
+                            onClick={() => handleLikeClick(post.id)}
                             disabled={isLikeLoading || likesLoading}
                             className={`transition-colors ${
                               isLiked
