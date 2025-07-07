@@ -126,6 +126,11 @@ function App() {
     // If we're viewing liked posts, don't add the new post since it's not liked yet
   };
 
+  // Handle post removal (when unliked in liked mode)
+  const handlePostRemoved = useCallback((postId) => {
+    setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
+  }, []);
+
   // Handle refresh - reset to first page with current view mode
   const handleRefresh = () => {
     setCurrentPage(1);
@@ -177,6 +182,7 @@ function App() {
               onRefresh={handleRefresh}
               onLoadMore={loadMorePosts}
               onViewModeToggle={handleViewModeToggle}
+              onPostRemoved={handlePostRemoved}
             />
           </div>
         </div>

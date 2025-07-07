@@ -87,6 +87,9 @@ export const AuthProvider = ({ children }) => {
       // Set axios default header for future requests
       axios.defaults.headers.common["Authorization"] = `Bearer ${userToken}`;
 
+      // Refresh the page to ensure clean state
+      window.location.reload();
+
       return { success: true, user: userData };
     } catch (error) {
       console.error("Login error:", error);
@@ -122,6 +125,9 @@ export const AuthProvider = ({ children }) => {
 
       // Set axios default header for future requests
       axios.defaults.headers.common["Authorization"] = `Bearer ${userToken}`;
+
+      // Refresh the page to ensure clean state
+      window.location.reload();
 
       return { success: true, user: userData };
     } catch (error) {

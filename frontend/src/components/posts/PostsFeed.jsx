@@ -34,6 +34,7 @@ const PostsFeed = ({
   onRefresh,
   onLoadMore,
   onViewModeToggle,
+  onPostRemoved,
 }) => {
   const { user } = useAuth();
   const {
@@ -62,7 +63,7 @@ const PostsFeed = ({
     }
   }, [posts, initializeLikeCounts]);
 
-  // Handle like button click - simplified!
+  // Handle like button click - updated to handle post removal in liked mode
   const handleLikeClick = useCallback(
     async (postId) => {
       if (!isAuthenticated) {
@@ -74,9 +75,24 @@ const PostsFeed = ({
         // Set loading state for this specific post
         setLikeLoadingStates((prev) => ({ ...prev, [postId]: true }));
 
-        // The useLikes hook handles all the optimistic updates and API calls
-        await toggleLike(postId);
+        // Check if the post was liked before the toggle
+        const wasLiked = isPostLiked(postId);
 
+        // The useLikes hook handles all the optimistic updates and API calls
+        const result = await toggleLike(postId);
+
+        // If we're in "liked" mode and the post was just unliked, remove it from the feed
+        if (
+          viewMode === "liked" &&
+          wasLiked &&
+          !result.isLiked &&
+          onPostRemoved
+        ) {
+          // Small delay to show the unlike animation before removal
+          setTimeout(() => {
+            onPostRemoved(postId);
+          }, 150);
+        }
       } catch (error) {
         console.error("Error toggling like:", error);
       } finally {
@@ -84,7 +100,7 @@ const PostsFeed = ({
         setLikeLoadingStates((prev) => ({ ...prev, [postId]: false }));
       }
     },
-    [isAuthenticated, toggleLike]
+    [isAuthenticated, toggleLike, isPostLiked, viewMode, onPostRemoved]
   );
 
   const handleToggleViewMode = () => {

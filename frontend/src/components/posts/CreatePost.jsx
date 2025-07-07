@@ -82,13 +82,7 @@ const CreatePost = ({ onPostCreated }) => {
       setIsSubmitting(false);
     }
   };
-
-  const handleCreatePostClick = () => {
-    if (!isAuthenticated) {
-      setIsAuthDialogOpen(true);
-    }
-  };
-
+  
   // Show loading state while auth is being checked
   if (loading) {
     return (
