@@ -36,7 +36,14 @@ const PostsFeed = ({
   onViewModeToggle,
 }) => {
   const { user } = useAuth();
-  const { isPostLiked, toggleLike, loading: likesLoading } = useLikes();
+  const {
+    isPostLiked,
+    toggleLike,
+    getLikeCount,
+    initializeLikeCounts,
+    loading: likesLoading,
+  } = useLikes();
+
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [likeLoadingStates, setLikeLoadingStates] = useState({});
 
@@ -48,7 +55,14 @@ const PostsFeed = ({
     onLoadMoreRef.current = onLoadMore;
   }, [onLoadMore]);
 
-  // Handle like button click
+  // Initialize like counts when posts change
+  useEffect(() => {
+    if (posts && posts.length > 0) {
+      initializeLikeCounts(posts);
+    }
+  }, [posts, initializeLikeCounts]);
+
+  // Handle like button click - simplified!
   const handleLikeClick = useCallback(
     async (postId) => {
       if (!isAuthenticated) {
@@ -60,21 +74,9 @@ const PostsFeed = ({
         // Set loading state for this specific post
         setLikeLoadingStates((prev) => ({ ...prev, [postId]: true }));
 
-        // Get current like status for potential view mode handling
-        const wasLiked = isPostLiked(postId);
-
-        // Call the API
+        // The useLikes hook handles all the optimistic updates and API calls
         await toggleLike(postId);
 
-        // Refresh posts to get updated counts from backend
-        setTimeout(() => {
-          onRefresh();
-        }, 100);
-
-        // If we're viewing liked posts and the user just unliked, the refresh will handle removing it
-        if (viewMode === "liked" && wasLiked) {
-          // The refresh above will handle this automatically
-        }
       } catch (error) {
         console.error("Error toggling like:", error);
       } finally {
@@ -82,19 +84,8 @@ const PostsFeed = ({
         setLikeLoadingStates((prev) => ({ ...prev, [postId]: false }));
       }
     },
-    [
-      isAuthenticated,
-      setIsAuthDialogOpen,
-      isPostLiked,
-      toggleLike,
-      onRefresh,
-      viewMode,
-    ]
+    [isAuthenticated, toggleLike]
   );
-
-  const getDisplayLikeCount = (post) => {
-    return post.likesCount || 0;
-  };
 
   const handleToggleViewMode = () => {
     const newMode = viewMode === "all" ? "liked" : "all";
@@ -291,7 +282,8 @@ const PostsFeed = ({
         ) : (
           <div className="space-y-6">
             {posts.map((post) => {
-              const displayLikeCount = getDisplayLikeCount(post);
+              // Use the useLikes hook to get reactive like state
+              const displayLikeCount = getLikeCount(post.id);
               const isLiked = isAuthenticated && isPostLiked(post.id);
               const isLikeLoading = likeLoadingStates[post.id];
 
