@@ -55,10 +55,8 @@ const CreatePost = ({ onPostCreated }) => {
 
       console.log("Post created:", response.data);
 
-      // Reset form
       reset();
 
-      // Show success status
       setSubmitStatus("success");
 
       // Notify parent component to refresh posts

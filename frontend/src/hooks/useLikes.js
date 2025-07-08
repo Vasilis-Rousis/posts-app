@@ -1,11 +1,10 @@
-// hooks/useLikes.js
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 
 export const useLikes = () => {
   const [userLikes, setUserLikes] = useState(new Set());
-  const [likeCounts, setLikeCounts] = useState(new Map()); // Track like counts for posts
+  const [likeCounts, setLikeCounts] = useState(new Map());
   const [loading, setLoading] = useState(false);
   const {
     isAuthenticated,
@@ -14,7 +13,6 @@ export const useLikes = () => {
     unregisterLogoutCallback,
   } = useAuth();
 
-  // Fetch user's existing likes when authenticated
   const fetchUserLikes = useCallback(async () => {
     if (!isAuthenticated || !user) {
       setUserLikes(new Set());
@@ -27,7 +25,7 @@ export const useLikes = () => {
       const response = await axios.get(
         "http://localhost:3001/api/user/liked-posts",
         {
-          params: { limit: 1000 }, // Get all user's likes
+          params: { limit: 1000 },
         }
       );
 
@@ -41,7 +39,6 @@ export const useLikes = () => {
     }
   }, [isAuthenticated, user]);
 
-  // Initialize like counts from posts data
   const initializeLikeCounts = useCallback((posts) => {
     const counts = new Map();
     posts.forEach((post) => {
@@ -55,7 +52,6 @@ export const useLikes = () => {
     fetchUserLikes();
   }, [fetchUserLikes]);
 
-  // Toggle like for a specific post
   const toggleLike = useCallback(
     async (postId) => {
       if (!isAuthenticated || !user) {
@@ -67,6 +63,7 @@ export const useLikes = () => {
       const currentCount = likeCounts.get(postId) || 0;
 
       try {
+        // --- UI change flow (before actual api call, only for reactivity)---
         // Optimistically update UI immediately
         setUserLikes((prev) => {
           const newLikes = new Set(prev);
@@ -96,6 +93,7 @@ export const useLikes = () => {
 
         const { isLiked, likesCount } = response.data;
 
+        // --- Reconcile/ Sync with actual server side data (true data) ---
         // Update with actual response from server
         setUserLikes((prev) => {
           const newLikes = new Set(prev);
@@ -118,6 +116,7 @@ export const useLikes = () => {
 
         return { isLiked, likesCount };
       } catch (error) {
+        // --- Revert like count if issue with server response ---
         setUserLikes((prev) => {
           const newLikes = new Set(prev);
           if (wasLiked) {
@@ -141,7 +140,6 @@ export const useLikes = () => {
     [isAuthenticated, user, userLikes, likeCounts]
   );
 
-  // Check if a post is liked
   const isPostLiked = useCallback(
     (postId) => {
       return userLikes.has(postId);
@@ -149,7 +147,6 @@ export const useLikes = () => {
     [userLikes]
   );
 
-  // Get like count for a post
   const getLikeCount = useCallback(
     (postId) => {
       return likeCounts.get(postId) || 0;
@@ -157,7 +154,6 @@ export const useLikes = () => {
     [likeCounts]
   );
 
-  // Clear all likes (for logout)
   const clearLikes = useCallback(() => {
     setUserLikes(new Set());
     setLikeCounts(new Map());

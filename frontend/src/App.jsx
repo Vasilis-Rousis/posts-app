@@ -1,22 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
-
-// Layout Components
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
-
-// Post Components
 import CreatePost from "./components/posts/CreatePost";
 import PostsFeed from "./components/posts/PostsFeed";
-
-// Auth Context
 import { useAuth } from "./contexts/AuthContext";
 
 function App() {
-  // Auth state
   const { isAuthenticated, user } = useAuth();
 
-  // State Management
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -34,7 +26,6 @@ function App() {
     viewMode,
   };
 
-  // Fetch posts from API with pagination
   const fetchPosts = async (page = 1, shouldAppend = false, mode = "all") => {
     try {
       if (page === 1) {
@@ -44,12 +35,10 @@ function App() {
       }
       setError(null);
 
-      // Determine which endpoint to call based on mode
       let url;
       let headers = {};
 
       if (mode === "liked") {
-        // For liked posts, we need authentication
         if (!isAuthenticated) {
           setError("You need to be logged in to view liked posts");
           setLoading(false);
@@ -117,13 +106,11 @@ function App() {
     return loadMoreRef.current();
   }, []);
 
-  // Handle new post creation
   const handlePostCreated = (newPost) => {
     // Only add to posts if we're viewing all posts
     if (viewMode === "all") {
       setPosts((prevPosts) => [newPost.post || newPost, ...prevPosts]);
     }
-    // If we're viewing liked posts, don't add the new post since it's not liked yet
   };
 
   // Handle post removal (when unliked in liked mode)

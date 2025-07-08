@@ -69,8 +69,8 @@ const AuthDialog = ({ isOpen, onClose, defaultMode = "login" }) => {
       }
 
       if (result.success) {
-        onClose(); // Close dialog on success
-        reset(); // Reset form
+        onClose();
+        reset();
       } else {
         setError(result.error);
       }

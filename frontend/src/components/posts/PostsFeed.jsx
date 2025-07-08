@@ -36,7 +36,6 @@ const PostsFeed = ({
   onViewModeToggle,
   onPostRemoved,
 }) => {
-  const { user } = useAuth();
   const {
     isPostLiked,
     toggleLike,

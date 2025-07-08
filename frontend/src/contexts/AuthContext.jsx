@@ -1,4 +1,3 @@
-// contexts/AuthContext.jsx
 import React, {
   createContext,
   useContext,
@@ -62,7 +61,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, []); // Empty dependency array
+  }, []);
 
   const login = async (email, password) => {
     try {
@@ -84,11 +83,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", userToken);
       localStorage.setItem("user", JSON.stringify(userData));
 
-      // Set axios default header for future requests
       axios.defaults.headers.common["Authorization"] = `Bearer ${userToken}`;
 
-      // Refresh the page to ensure clean state
-      window.location.reload();
 
       return { success: true, user: userData };
     } catch (error) {
@@ -123,11 +119,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", userToken);
       localStorage.setItem("user", JSON.stringify(userData));
 
-      // Set axios default header for future requests
       axios.defaults.headers.common["Authorization"] = `Bearer ${userToken}`;
-
-      // Refresh the page to ensure clean state
-      window.location.reload();
 
       return { success: true, user: userData };
     } catch (error) {
@@ -151,19 +143,13 @@ export const AuthProvider = ({ children }) => {
       }
     });
 
-    // Clear state
     setUser(null);
     setToken(null);
 
-    // Clear localStorage
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    // Remove axios default header
     delete axios.defaults.headers.common["Authorization"];
-
-    // Refresh the page to ensure clean state
-    window.location.reload();
   };
 
   const value = {
