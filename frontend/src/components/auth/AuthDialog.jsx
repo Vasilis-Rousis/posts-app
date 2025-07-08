@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Loader2, User, Mail, Lock, UserPlus } from "lucide-react";
 import { Button } from "../ui/button";
@@ -37,7 +37,7 @@ const AuthDialog = ({ isOpen, onClose, defaultMode = "login" }) => {
   });
 
   // Reset form and state when mode changes or dialog closes
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) {
       reset();
       setError("");
@@ -45,7 +45,7 @@ const AuthDialog = ({ isOpen, onClose, defaultMode = "login" }) => {
     }
   }, [isOpen, reset]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     reset();
     setError("");
   }, [mode, reset]);
